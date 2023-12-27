@@ -16,96 +16,44 @@
 package com.example.wordsapp
 
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import androidx.navigation.NavController
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.setupActionBarWithNavController
 import com.example.wordsapp.databinding.ActivityMainBinding
 
 /**
  * Main Activity and entry point for the app. Displays a RecyclerView of letters.
  */
 class MainActivity : AppCompatActivity() {
-    private lateinit var recyclerView: RecyclerView
-    // Keeps track of which LayoutManager is in use for the [RecyclerView]
-    private var isLinearLayoutManager = true
 
+    // 建立 navController 屬性
+    private lateinit var navController: NavController
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        /* 小筆記：LayoutInflater的意思
+        Inflater是指打氣機的意思，比如把氣球充滿氣，所以LayoutInflater就是把layout充氣充滿的機制，
+        可以想像成製作出一個layout的意思。 */
+
+        // 將xml(activity_main.xml)實例化為相應的 view 物件，並使用 binding 存取 view 物件
         val binding = ActivityMainBinding.inflate(layoutInflater)
+        // 設定 activity view:使用 binding.root 代替 resource ID(R.layout.activity_main)
         setContentView(binding.root)
 
-        recyclerView = binding.recyclerView
-        // Sets the LinearLayoutManager of the recyclerview
-        chooseLayout()
+        // 引用 nav_host_fragment，並指派給 navController 屬性
+        val navHostFragment = supportFragmentManager
+            .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        navController = navHostFragment.navController
+
+        // 呼叫 setupActionBarWithNavController()，並傳入 navController
+        // 確保畫面上會顯示動作列(action bar)按鈕可見
+        setupActionBarWithNavController(navController)
     }
 
-    /**
-     * Sets the LayoutManager for the [RecyclerView] based on the desired orientation of the list.
-     */
-    private fun chooseLayout() {
-        if (isLinearLayoutManager) {
-            recyclerView.layoutManager = LinearLayoutManager(this)
-        } else {
-            recyclerView.layoutManager = GridLayoutManager(this, 4)
-        }
-        recyclerView.adapter = LetterAdapter()
-    }
-
-    private fun setIcon(menuItem: MenuItem?) {
-        if (menuItem == null)
-            return
-
-        // Set the drawable for the menu icon based on which LayoutManager is currently in use
-
-        // An if-clause can be used on the right side of an assignment if all paths return a value.
-        // The following code is equivalent to
-        // if (isLinearLayoutManager)
-        //     menu.icon = ContextCompat.getDrawable(this, R.drawable.ic_grid_layout)
-        // else menu.icon = ContextCompat.getDrawable(this, R.drawable.ic_linear_layout)
-        menuItem.icon =
-            if (isLinearLayoutManager)
-                ContextCompat.getDrawable(this, R.drawable.ic_grid_layout)
-            else ContextCompat.getDrawable(this, R.drawable.ic_linear_layout)
-    }
-
-    /**
-     * Initializes the [Menu] to be used with the current [Activity]
-     */
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.layout_menu, menu)
-
-        val layoutButton = menu?.findItem(R.id.action_switch_layout)
-        // Calls code to set the icon based on the LinearLayoutManager of the RecyclerView
-        setIcon(layoutButton)
-
-        return true
-    }
-
-    /**
-     * Determines how to handle interactions with the selected [MenuItem]
-     */
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_switch_layout -> {
-                // Sets isLinearLayoutManager (a Boolean) to the opposite value
-                isLinearLayoutManager = !isLinearLayoutManager
-                // Sets layout and icon
-                chooseLayout()
-                setIcon(item)
-
-                return true
-            }
-            //  Otherwise, do nothing and use the core event handling
-
-            // when clauses require that all possible paths be accounted for explicitly,
-            //  for instance both the true and false cases if the value is a Boolean,
-            //  or an else to catch all unhandled cases.
-            else -> super.onOptionsItemSelected(item)
-        }
+    // 導入 onSupportNavigateUp()
+    // 除了在 XML 中將 defaultNavHost 設定為 true 之外，此方法也可用來處理 up 按鈕
+    override fun onSupportNavigateUp(): Boolean {
+        return navController.navigateUp() || super.onSupportNavigateUp()
     }
 }
