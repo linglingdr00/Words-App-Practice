@@ -24,10 +24,14 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.wordsapp.data.SettingsDataStore
 import com.example.wordsapp.databinding.FragmentLetterListBinding
+import kotlinx.coroutines.launch
 
 /**
  * Entry fragment for the app. Displays a [RecyclerView] of letters.
@@ -42,6 +46,9 @@ class LetterListFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     // Keeps track of which LayoutManager is in use for the [RecyclerView]
     private var isLinearLayoutManager = true
+
+    // 新增 type 為 SettingsDataStore 的變數
+    private lateinit var SettingsDataStore: SettingsDataStore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,6 +71,18 @@ class LetterListFragment : Fragment() {
         // Sets the LayoutManager of the recyclerview
         // On the first run of the app, it will be LinearLayoutManager
         chooseLayout()
+        // 初始化 SettingsDataStore
+        SettingsDataStore = SettingsDataStore(requireContext())
+        // 將 preferenceFlow 轉換為 Livedata，並新增 observer(viewLifecycleOwner 為 owner)
+        SettingsDataStore.preferenceFlow.asLiveData().observe(viewLifecycleOwner, {
+            value ->
+            // 將新的 layout 設定指派給 isLinearLayoutManager
+            isLinearLayoutManager = value
+            // 更新 RecyclerView layout
+            chooseLayout()
+            // 重畫(redraw) menu
+            activity?.invalidateOptionsMenu()
+        })
     }
 
     /**
@@ -117,7 +136,10 @@ class LetterListFragment : Fragment() {
                 // Sets layout and icon
                 chooseLayout()
                 setIcon(item)
-
+                // 啟動 coroutine 並將 layout 設定寫入 preference Datastore
+                lifecycleScope.launch {
+                    SettingsDataStore.saveLayoutToPreferencesStore(isLinearLayoutManager, requireContext())
+                }
                 return true
             }
             // Otherwise, do nothing and use the core event handling
